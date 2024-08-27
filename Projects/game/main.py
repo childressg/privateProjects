@@ -11,7 +11,10 @@ middle = pg.Vector2(WIDTH / 2, HEIGHT / 2)
 
 pg.init()
 screen = pg.display.set_mode((WIDTH, HEIGHT))
+pg.display.set_caption('Something')
 inventorySurface = pg.Surface((WIDTH, HEIGHT), pg.SRCALPHA)
+nameFont = pg.font.SysFont('Arial', 15)
+countFont = pg.font.SysFont('Arial', 10)
 clock = pg.time.Clock()
 running = True
 
@@ -28,9 +31,12 @@ objectFlashLength = 5
 reach = 100
 
 inventoryActive = False
-inventorySize = 27
+inventorySize = 36
 inventoryNames = []
 inventoryCounts = []
+inventoryIemPrimaryColor = {"Blue Stuff" : (0, 0, 255)}
+inventoryIemSecondaryColor = {"Blue Stuff" : (0, 0, 100)}
+inventorySorting = 'Name'
 
 #function for finding an unoccupied location for a target
 def randomPos():
@@ -150,6 +156,11 @@ def update(events):
                             objectPositions[i] = newPos
                             objectHealths[i] = 10
                             objectFlashTicks[i] = 0
+                            if "Blue Stuff" not in inventoryNames:
+                                inventoryNames.append("Blue Stuff")
+                                inventoryCounts.append(1)
+                            else:
+                                inventoryCounts[inventoryNames.index("Blue Stuff")] += 1
 
         if objectFlashTicks[i] > 0:
             color = (255, 255, 255)
@@ -168,7 +179,26 @@ def update(events):
                     inventoryActive = True
 
     if inventoryActive:
-        pg.draw.rect(inventorySurface, (200, 200, 200, 230), [WIDTH * 0.05, HEIGHT * 0.1, WIDTH * 0.9, HEIGHT * 0.8])
+        pg.draw.rect(inventorySurface, (200, 200, 200, 230), [WIDTH * 0.05, HEIGHT * 0.1, WIDTH * 0.9, HEIGHT * 0.72]) # inventory background
+        for i in range(4):
+            for j in range(9):
+                pg.draw.rect(inventorySurface, (150, 150, 150, 230), [WIDTH * 0.075 + WIDTH * 0.095 * j, HEIGHT * 0.145 + HEIGHT * 0.16 * i, WIDTH * 0.09, HEIGHT * 0.15]) # inventory slots
+        for i, item in enumerate(inventoryNames):
+            x = i % 9
+            y = i // 9
+            pg.draw.rect(inventorySurface, (220, 220, 220, 230), [WIDTH * 0.075 + WIDTH * 0.095 * x, HEIGHT * 0.265 + HEIGHT * 0.16 * y, WIDTH * 0.09, HEIGHT * 0.03]) # item name background
+            pg.draw.rect(inventorySurface, (220, 220, 220, 230), [WIDTH * 0.075 + WIDTH * 0.095 * x, HEIGHT * 0.145 + HEIGHT * 0.16 * y, WIDTH * 0.02, HEIGHT * 0.034]) # item count background
+            name = nameFont.render(item, 1, (0, 0, 0)) # item name
+            nameRect = name.get_rect()
+            nameRect.center = (WIDTH * 0.12 + WIDTH * 0.095 * x, HEIGHT * 0.28 + HEIGHT * 0.16 * y)
+            count = countFont.render(str(inventoryCounts[i]), 1, (0, 0, 0)) # item count
+            countRect = count.get_rect()
+            countRect.center = (WIDTH * 0.085 + WIDTH * 0.095 * x, HEIGHT * 0.162 + HEIGHT * 0.16 * y)
+            inventorySurface.blit(name, nameRect)
+            inventorySurface.blit(count, countRect)
+            pg.draw.circle(inventorySurface, inventoryIemSecondaryColor[item],(WIDTH * 0.13 + WIDTH * 0.095 * x, HEIGHT * 0.208 + HEIGHT * 0.16 * y), WIDTH * 0.025) # secondary color circle
+            pg.draw.circle(inventorySurface, inventoryIemPrimaryColor[item],(WIDTH * 0.13 + WIDTH * 0.095 * x, HEIGHT * 0.208 + HEIGHT * 0.16 * y), WIDTH * 0.02) # primary color circle
+
 
 start()
 
@@ -188,6 +218,7 @@ while running:
     update(events)
 
     screen.blit(inventorySurface, (0, 0))
+
 
     pg.display.flip()
 
