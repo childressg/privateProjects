@@ -1,6 +1,9 @@
 import pygame as pg
 import random
 import math
+import Item
+from inventory import inventory
+from object import *
 
 from attr.validators import instance_of
 
@@ -15,6 +18,7 @@ pg.display.set_caption('Something')
 inventorySurface = pg.Surface((WIDTH, HEIGHT), pg.SRCALPHA)
 nameFont = pg.font.SysFont('Arial', 15)
 countFont = pg.font.SysFont('Arial', 10)
+sortFont = pg.font.SysFont('Arial', 20)
 clock = pg.time.Clock()
 running = True
 
@@ -24,23 +28,16 @@ sprintMaxSpeed = 10
 pos = pg.Vector2(0, 0)
 vel = pg.Vector2(0, 0)
 
-objectPositions = []
-objectHealths = []
-objectFlashTicks = []
+objectList = []
 objectFlashLength = 5
 reach = 100
 
 inventoryActive = False
-inventorySize = 36
-inventoryNames = []
-inventoryCounts = []
-inventoryIemPrimaryColor = {"Blue Stuff" : (0, 0, 255)}
-inventoryIemSecondaryColor = {"Blue Stuff" : (0, 0, 100)}
-inventorySorting = 'Name'
+inventory = inventory(36)
 
 #function for finding an unoccupied location for a target
 def randomPos():
-    limits = (-WIDTH, WIDTH * 2, -HEIGHT, HEIGHT * 2)
+    limits = (int(WIDTH * 0.6) + 15, int(WIDTH * 3.6) - 15, int(HEIGHT * -1) + 15, int(HEIGHT * 2) - 15)
     found = False
 
     while not found:
@@ -49,9 +46,10 @@ def randomPos():
         randY = math.floor(random.randrange(limits[2], limits[3]))
         newPos = pg.Vector2(randX, randY)
 
-        if len(objectPositions) > 0:
+        if len(objectList) > 0:
             tooClose = False
-            for objectPos in objectPositions:
+            for object in objectList:
+                objectPos = object.position
                 if isinstance(objectPos, pg.Vector2):
                     if objectPos.distance_to(newPos) < 30:
                         tooClose = True
@@ -63,13 +61,18 @@ def randomPos():
             found = True
             return newPos
 
+def createObject(object):
+    if isinstance(object, objectEnum):
+        newPos = randomPos()
+        objectList.append(Object(object, newPos))
+
 #start function
 def start():
-    for i in range(200):
-        newPos = randomPos()
-        objectPositions.append(newPos)
-        objectHealths.append(10)
-        objectFlashTicks.append(0)
+    for i in range(500):
+        if not random.randint(1, 4) == 4:
+            createObject(objectEnum.STONE)
+        else:
+            createObject(objectEnum.IRON)
 
 #function to calculate angle between two points
 def angleBetween(p1, p2):
@@ -108,17 +111,17 @@ def update(events):
     if vel.magnitude() < 0.2:
         vel = pg.Vector2(0, 0)
 
-    #collision
-    collisionpasses = 2
-    for i in range(collisionpasses):
-        for objectPos in objectPositions:
-            if isinstance(objectPos, pg.Vector2):
-                distance = middle.distance_to(objectPos - pos)
-                if middle.distance_to(objectPos - pos) < 29:
-                    angle = angleBetween(pos, objectPos)
-                    distanceDiff = 30 - distance
-                    pos -= pg.Vector2(math.cos(angle), math.sin(angle)) * distanceDiff
-                    vel = pg.Vector2(0, 0)
+    # #collision
+    # collisionpasses = 2
+    # for i in range(collisionpasses):
+    #     for objectPos in objectPositions:
+    #         if isinstance(objectPos, pg.Vector2):
+    #             distance = middle.distance_to(objectPos - pos)
+    #             if middle.distance_to(objectPos - pos) < 29:
+    #                 angle = angleBetween(pos, objectPos)
+    #                 distanceDiff = 30 - distance
+    #                 pos -= pg.Vector2(math.cos(angle), math.sin(angle)) * distanceDiff
+    #                 vel = pg.Vector2(0, 0)
 
     mousePos = pg.mouse.get_pos()
 
@@ -127,6 +130,7 @@ def update(events):
     # pg.draw.circle(screen, (0, 255, 0), mousePos, 2)
     # pg.draw.arc(screen, (255, 0, 0), (middle.x - 100, middle.y - 100, 200, 200), angle - math.radians(15), angle + math.radians(15), 45)
 
+    pg.draw.rect(screen, (92, 70, 41), [WIDTH * 0.6 - pos.x, HEIGHT * -1 - pos.y, WIDTH * 3, HEIGHT * 3])
     pg.draw.circle(screen, 'white', middle, 10)
 
     #mouse click
@@ -136,37 +140,32 @@ def update(events):
             if event.button == pg.BUTTON_LEFT:
                 mouseclicked = True
 
-    for i in range(len(objectPositions)):
-        objectPosition = objectPositions[i]
-        color = (0, 0, 255)
-
+    for object in objectList:
+        objectPosition = object.position
         if isinstance(objectPosition, pg.Vector2):
             distance = middle.distance_to(objectPosition - pos)
             if distance <= reach:
 
                 pg.draw.circle(screen, (255, 255, 255), objectPosition - pos, 17)
-                pg.draw.rect(screen, (255, 0, 0), [objectPosition - pos - pg.Vector2(17, 20), pg.Vector2(34, 5)])
-                pg.draw.rect(screen, (0, 255, 0), [objectPosition - pos - pg.Vector2(17, 20), pg.Vector2(34 * (objectHealths[i] / 10), 5)])
+                pg.draw.rect(screen, (255, 0, 0), [objectPosition - pos - pg.Vector2(17, 25), pg.Vector2(34, 5)])
+                pg.draw.rect(screen, (0, 255, 0), [objectPosition - pos - pg.Vector2(17, 25), pg.Vector2(34 * (object.health / object.maxHealth), 5)])
                 if mouseclicked:
                     if objectPosition.distance_to(mousePos + pos) <= 15:
-                        objectHealths[i] -= 1
-                        objectFlashTicks[i] = objectFlashLength
-                        if objectHealths[i] <= 0:
+                        object.health -= 1
+                        object.flashTick = objectFlashLength
+                        if object.health <= 0:
                             newPos = randomPos()
-                            objectPositions[i] = newPos
-                            objectHealths[i] = 10
-                            objectFlashTicks[i] = 0
-                            if "Blue Stuff" not in inventoryNames:
-                                inventoryNames.append("Blue Stuff")
-                                inventoryCounts.append(1)
-                            else:
-                                inventoryCounts[inventoryNames.index("Blue Stuff")] += 1
+                            object.position = newPos
+                            object.health = object.maxHealth
+                            object.flashTick = 0
+                            if isinstance(object.dropItem, Item.item):
+                                inventory.add(object.dropItem)
+        if object.flashTick > 0:
+            object.flashTick -= 1
 
-        if objectFlashTicks[i] > 0:
-            color = (255, 255, 255)
-            objectFlashTicks[i] -= 1
+        pg.draw.circle(screen, object.getColor()[1], object.position - pos, 15)
+        pg.draw.circle(screen, object.getColor()[0], object.position - pos, 12)
 
-        pg.draw.circle(screen, color, objectPosition - pos, 15)
 
 
     #inventory
@@ -180,24 +179,50 @@ def update(events):
 
     if inventoryActive:
         pg.draw.rect(inventorySurface, (200, 200, 200, 230), [WIDTH * 0.05, HEIGHT * 0.1, WIDTH * 0.9, HEIGHT * 0.72]) # inventory background
+
+        pg.draw.rect(inventorySurface, (85, 85, 85, 230), [WIDTH * 0.835, HEIGHT * 0.105, WIDTH * 0.06, HEIGHT * 0.035]) # sort method button
+        sorting = sortFont.render(inventory.sortingType, 1, (255, 255, 255))
+        sortRect = sorting.get_rect()
+        sortRect.center = (WIDTH * 0.865, HEIGHT * 0.1220)
+        if mouseclicked and sortRect.collidepoint(mousePos):
+            if inventory.sortingType == "Name":
+                inventory.sortingType = "Count"
+            else:
+                inventory.sortingType = "Name"
+        inventorySurface.blit(sorting, sortRect)
+
+        if mouseclicked and pg.Rect([WIDTH * 0.9, HEIGHT * 0.105, WIDTH * 0.021, HEIGHT * 0.035]).collidepoint(mousePos):
+            if inventory.sortDown:
+                inventory.sortDown = False
+            else:
+                inventory.sortDown = True
+
+        pg.draw.rect(inventorySurface, (85, 85, 85, 230), [WIDTH * 0.9, HEIGHT * 0.105, WIDTH * 0.021, HEIGHT * 0.035]) # sort direction button
+        if inventory.sortDown: # center = (WDITH * 0.9105, HEIGHT * 0.1225)
+            pg.draw.polygon(inventorySurface, (255, 255, 255, 255), [(WIDTH * 0.92, HEIGHT *  0.114275), (WIDTH * 0.9105, HEIGHT *  0.130725), (WIDTH * 0.901, HEIGHT *  0.114275)], 1)
+        else:
+            pg.draw.polygon(inventorySurface, (255, 255, 255, 255),[(WIDTH * 0.92, HEIGHT * 0.130725), (WIDTH * 0.9105, HEIGHT * 0.114275), (WIDTH * 0.901, HEIGHT * 0.130725)], 1)
+
+
         for i in range(4):
             for j in range(9):
                 pg.draw.rect(inventorySurface, (150, 150, 150, 230), [WIDTH * 0.075 + WIDTH * 0.095 * j, HEIGHT * 0.145 + HEIGHT * 0.16 * i, WIDTH * 0.09, HEIGHT * 0.15]) # inventory slots
-        for i, item in enumerate(inventoryNames):
+        for i, item in enumerate(inventory.items):
             x = i % 9
             y = i // 9
             pg.draw.rect(inventorySurface, (220, 220, 220, 230), [WIDTH * 0.075 + WIDTH * 0.095 * x, HEIGHT * 0.265 + HEIGHT * 0.16 * y, WIDTH * 0.09, HEIGHT * 0.03]) # item name background
             pg.draw.rect(inventorySurface, (220, 220, 220, 230), [WIDTH * 0.075 + WIDTH * 0.095 * x, HEIGHT * 0.145 + HEIGHT * 0.16 * y, WIDTH * 0.02, HEIGHT * 0.034]) # item count background
-            name = nameFont.render(item, 1, (0, 0, 0)) # item name
+            name = nameFont.render(item.name, 1, (0, 0, 0)) # item name
             nameRect = name.get_rect()
             nameRect.center = (WIDTH * 0.12 + WIDTH * 0.095 * x, HEIGHT * 0.28 + HEIGHT * 0.16 * y)
-            count = countFont.render(str(inventoryCounts[i]), 1, (0, 0, 0)) # item count
+            count = countFont.render(str(item.count), 1, (0, 0, 0)) # item count
             countRect = count.get_rect()
             countRect.center = (WIDTH * 0.085 + WIDTH * 0.095 * x, HEIGHT * 0.162 + HEIGHT * 0.16 * y)
             inventorySurface.blit(name, nameRect)
             inventorySurface.blit(count, countRect)
-            pg.draw.circle(inventorySurface, inventoryIemSecondaryColor[item],(WIDTH * 0.13 + WIDTH * 0.095 * x, HEIGHT * 0.208 + HEIGHT * 0.16 * y), WIDTH * 0.025) # secondary color circle
-            pg.draw.circle(inventorySurface, inventoryIemPrimaryColor[item],(WIDTH * 0.13 + WIDTH * 0.095 * x, HEIGHT * 0.208 + HEIGHT * 0.16 * y), WIDTH * 0.02) # primary color circle
+            pg.draw.circle(inventorySurface, item.secondaryColor,(WIDTH * 0.13 + WIDTH * 0.095 * x, HEIGHT * 0.208 + HEIGHT * 0.16 * y), WIDTH * 0.025) # secondary color circle
+            pg.draw.circle(inventorySurface, item.primaryColor,(WIDTH * 0.13 + WIDTH * 0.095 * x, HEIGHT * 0.208 + HEIGHT * 0.16 * y), WIDTH * 0.02) # primary color circle
+
 
 
 start()
