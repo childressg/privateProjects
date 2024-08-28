@@ -1,11 +1,13 @@
 import pygame as pg
 import random
 import math
+
+from patsy import origin
+from scipy.special import euler
+
 import Item
 from inventory import inventory
 from object import *
-
-from attr.validators import instance_of
 
 WIDTH = 1000
 HEIGHT = 600
@@ -31,6 +33,13 @@ vel = pg.Vector2(0, 0)
 objectList = []
 objectFlashLength = 5
 reach = 100
+
+pickaxeAngle = 90
+swinging = False
+swingingDown = True
+swingSpeed = 5
+upperAngle = 90
+lowerAngle = 0
 
 inventoryActive = False
 inventory = inventory(36)
@@ -80,11 +89,22 @@ def angleBetween(p1, p2):
     angle = pg.Vector2(1, 0).angle_to(diff)
     return angle
 
+def rotate_on_pivot(image, angle, pivot, origin):
+    surf = pg.transform.rotate(image, angle)
+
+    offset = pivot + (origin - pivot).rotate(-angle)
+    rect = surf.get_rect(center=offset)
+
+    return surf, rect
+
 #game loop function
 def update(events):
     global inventoryActive
     global vel
     global pos
+    global pickaxeAngle
+    global swinging
+    global swingingDown
     keys = pg.key.get_pressed()
 
     acc = pg.Vector2(0, 0)
@@ -124,13 +144,44 @@ def update(events):
     #                 vel = pg.Vector2(0, 0)
 
     mousePos = pg.mouse.get_pos()
+    mouseAngle = math.radians(180 - angleBetween(middle, pg.Vector2(mousePos[0], mousePos[1])))
 
     # debug
-    # angle = math.radians(180 - angleBetween(middle, pg.Vector2(mousePos[0], mousePos[1])))
+
     # pg.draw.circle(screen, (0, 255, 0), mousePos, 2)
     # pg.draw.arc(screen, (255, 0, 0), (middle.x - 100, middle.y - 100, 200, 200), angle - math.radians(15), angle + math.radians(15), 45)
 
     pg.draw.rect(screen, (92, 70, 41), [WIDTH * 0.6 - pos.x, HEIGHT * -1 - pos.y, WIDTH * 3, HEIGHT * 3])
+    armSurface = pg.Surface((WIDTH, HEIGHT), pg.SRCALPHA)
+
+    pg.draw.rect(armSurface, 'white', [middle.x, middle.y + 5, 20, 5])
+
+
+    if swinging:
+        if swingingDown:
+            pickaxeAngle -= swingSpeed
+            if pickaxeAngle <= lowerAngle:
+                pickaxeAngle = lowerAngle
+                swingingDown = False
+        else:
+            pickaxeAngle += swingSpeed
+            if pickaxeAngle >= upperAngle:
+                pickaxeAngle = upperAngle
+                swingingDown = True
+                swinging = False
+
+    pickaxeRadius = 20
+    startPos, endPos = pickaxeRadius * math.cos(math.radians(pickaxeAngle + 25)), pickaxeRadius * math.cos(math.radians(pickaxeAngle - 25))
+    stickPos = pickaxeRadius * math.cos(math.radians(pickaxeAngle))
+    pg.draw.line(armSurface, 'burlywood3', (middle.x + 20, middle.y + 7.5), (middle.x + 20 + stickPos, middle.y + 7.5), 2)
+    pg.draw.line(armSurface, 'silver', (middle.x + 20 + startPos, middle.y + 7.5), (middle.x + 20 + endPos, middle.y + 7.5), 3)
+
+    armRect = armSurface.get_rect()
+    armSurface, rect = rotate_on_pivot(armSurface, math.degrees(mouseAngle), middle, middle)
+    screen.blit(armSurface, rect)
+
+
+
     pg.draw.circle(screen, 'white', middle, 10)
 
     #mouse click
@@ -151,15 +202,17 @@ def update(events):
                 pg.draw.rect(screen, (0, 255, 0), [objectPosition - pos - pg.Vector2(17, 25), pg.Vector2(34 * (object.health / object.maxHealth), 5)])
                 if mouseclicked:
                     if objectPosition.distance_to(mousePos + pos) <= 15:
-                        object.health -= 1
-                        object.flashTick = objectFlashLength
-                        if object.health <= 0:
-                            newPos = randomPos()
-                            object.position = newPos
-                            object.health = object.maxHealth
-                            object.flashTick = 0
-                            if isinstance(object.dropItem, Item.item):
-                                inventory.add(object.dropItem)
+                        if not swinging:
+                            swinging = True
+                            object.health -= 1
+                            object.flashTick = objectFlashLength
+                            if object.health <= 0:
+                                newPos = randomPos()
+                                object.position = newPos
+                                object.health = object.maxHealth
+                                object.flashTick = 0
+                                if isinstance(object.dropItem, Item.item):
+                                    inventory.add(object.dropItem)
         if object.flashTick > 0:
             object.flashTick -= 1
 
@@ -189,6 +242,7 @@ def update(events):
                 inventory.sortingType = "Count"
             else:
                 inventory.sortingType = "Name"
+
         inventorySurface.blit(sorting, sortRect)
 
         if mouseclicked and pg.Rect([WIDTH * 0.9, HEIGHT * 0.105, WIDTH * 0.021, HEIGHT * 0.035]).collidepoint(mousePos):
