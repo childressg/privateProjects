@@ -15,9 +15,13 @@ pg.init()
 screen = pg.display.set_mode((WIDTH, HEIGHT))
 pg.display.set_caption('Something')
 inventorySurface = pg.Surface((WIDTH, HEIGHT), pg.SRCALPHA)
+
 nameFont = pg.font.SysFont('Arial', 15)
 countFont = pg.font.SysFont('Arial', 10)
 sortFont = pg.font.SysFont('Arial', 20)
+infoNameFont = pg.font.SysFont('Arial', 30)
+infoDescriptionFont = pg.font.SysFont('Arial', 30)
+
 clock = pg.time.Clock()
 running = True
 
@@ -42,6 +46,8 @@ mouseAngle = 0
 
 inventoryActive = False
 inventory = inventory(28)
+selected = -1
+descriptionHeight = 0
 
 #function for finding an unoccupied location for a target
 def randomPos():
@@ -103,6 +109,8 @@ def update(events):
     global swinging
     global swingingDown
     global mouseAngle
+    global selected
+    global descriptionHeight
 
     keys = pg.key.get_pressed()
 
@@ -216,6 +224,7 @@ def update(events):
             if event.key == pg.K_TAB:
                 if inventoryActive:
                     inventoryActive = False
+                    selected = -1
                 else:
                     inventoryActive = True
 
@@ -231,25 +240,34 @@ def update(events):
                 inventory.sortingType = "Count"
             else:
                 inventory.sortingType = "Name"
+            selected = -1
 
         inventorySurface.blit(sorting, sortRect)
 
-        if mouseclicked and pg.Rect([WIDTH * 0.71, HEIGHT * 0.105, WIDTH * 0.021, HEIGHT * 0.035]).collidepoint(mousePos):
+        if mouseclicked and pg.Rect([WIDTH * 0.714, HEIGHT * 0.105, WIDTH * 0.021, HEIGHT * 0.035]).collidepoint(mousePos):
             if inventory.sortDown:
                 inventory.sortDown = False
             else:
                 inventory.sortDown = True
+            selected = -1
 
-        pg.draw.rect(inventorySurface, (85, 85, 85, 230), [WIDTH * 0.71, HEIGHT * 0.105, WIDTH * 0.021, HEIGHT * 0.035]) # sort direction button
+        pg.draw.rect(inventorySurface, (85, 85, 85, 230), [WIDTH * 0.714, HEIGHT * 0.105, WIDTH * 0.021, HEIGHT * 0.035]) # sort direction button
         if inventory.sortDown:
-            pg.draw.polygon(inventorySurface, (255, 255, 255, 255), [(WIDTH * 0.73, HEIGHT *  0.114275), (WIDTH * 0.7205, HEIGHT *  0.130725), (WIDTH * 0.711, HEIGHT *  0.114275)], 1)
+            pg.draw.polygon(inventorySurface, (255, 255, 255, 255), [(WIDTH * 0.734, HEIGHT *  0.114275), (WIDTH * 0.7245, HEIGHT *  0.130725), (WIDTH * 0.715, HEIGHT *  0.114275)], 1)
         else:
-            pg.draw.polygon(inventorySurface, (255, 255, 255, 255),[(WIDTH * 0.73, HEIGHT * 0.130725), (WIDTH * 0.7205, HEIGHT * 0.114275), (WIDTH * 0.711, HEIGHT * 0.130725)], 1)
+            pg.draw.polygon(inventorySurface, (255, 255, 255, 255),[(WIDTH * 0.734, HEIGHT * 0.130725), (WIDTH * 0.7245, HEIGHT * 0.114275), (WIDTH * 0.715, HEIGHT * 0.130725)], 1)
 
 
         for i in range(4):
             for j in range(7):
-                pg.draw.rect(inventorySurface, (150, 150, 150, 230), [WIDTH * 0.075 + WIDTH * 0.095 * j, HEIGHT * 0.145 + HEIGHT * 0.16 * i, WIDTH * 0.09, HEIGHT * 0.15]) # inventory slots
+                index = 7 * i + j
+                if index == selected:
+                    pg.draw.rect(inventorySurface, (100, 100, 100, 230), [WIDTH * 0.07 + WIDTH * 0.095 * j, HEIGHT * 0.135 + HEIGHT * 0.16 * i, WIDTH * 0.1, HEIGHT * 0.17])
+                slot = pg.draw.rect(inventorySurface, (150, 150, 150, 230), [WIDTH * 0.075 + WIDTH * 0.095 * j, HEIGHT * 0.145 + HEIGHT * 0.16 * i, WIDTH * 0.09, HEIGHT * 0.15]) # inventory slots
+                if mouseclicked and slot.collidepoint(mousePos):
+                    if index < len(inventory.items):
+                        selected = index
+
         for i, item in enumerate(inventory.items):
             x = i % 9
             y = i // 9
@@ -265,6 +283,32 @@ def update(events):
             inventorySurface.blit(count, countRect)
             pg.draw.circle(inventorySurface, item.secondaryColor,(WIDTH * 0.13 + WIDTH * 0.095 * x, HEIGHT * 0.208 + HEIGHT * 0.16 * y), WIDTH * 0.025) # secondary color circle
             pg.draw.circle(inventorySurface, item.primaryColor,(WIDTH * 0.13 + WIDTH * 0.095 * x, HEIGHT * 0.208 + HEIGHT * 0.16 * y), WIDTH * 0.02) # primary color circle
+
+        pg.draw.rect(inventorySurface, (180, 180, 180, 230), [WIDTH * 0.75, HEIGHT * 0.145, WIDTH * 0.185, HEIGHT * 0.63])
+
+        pg.draw.rect(inventorySurface, (160, 160, 160, 230),[WIDTH * 0.76, HEIGHT * 0.16, WIDTH * 0.165, HEIGHT * 0.04]) # item name
+        pg.draw.rect(inventorySurface, (160, 160, 160, 230),[WIDTH * 0.76, HEIGHT * 0.21, WIDTH * 0.165, HEIGHT * 0.27]) # item visual
+        pg.draw.rect(inventorySurface, (160, 160, 160, 230),[WIDTH * 0.76, HEIGHT * 0.49, WIDTH * 0.165, descriptionHeight + HEIGHT * .02]) # item description
+
+        if selected != -1:
+            selectedItem = inventory.items[selected]
+            if isinstance(selectedItem, Item.item):
+                itemName = nameFont.render(selectedItem.name, 1, (0, 0, 0))  # item name
+                itemNameRect = itemName.get_rect()
+                itemNameRect.center = (WIDTH * 0.8425, HEIGHT * 0.18)
+                inventorySurface.blit(itemName, itemNameRect)
+
+                if selectedItem.type == "material":
+                    center = (WIDTH * 0.8425, HEIGHT * 0.345)
+                    pg.draw.circle(inventorySurface, selectedItem.secondaryColor, center, 50)
+                    pg.draw.circle(inventorySurface, selectedItem.primaryColor, center, 40)
+
+                itemDescription = nameFont.render(selectedItem.description, 1, (0, 0, 0))  # item name
+                itemDescriptionRect = itemDescription.get_rect()
+                itemDescriptionRect.midtop = (WIDTH * 0.8425, HEIGHT * 0.50)
+                descriptionHeight = itemDescriptionRect.height
+                inventorySurface.blit(itemDescription, itemDescriptionRect)
+
 
 
 

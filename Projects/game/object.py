@@ -7,29 +7,32 @@ class objectEnum(Enum):
         5,
         (173, 173, 173),
         (95, 95, 95),
-        1
+        1,
+        "Rock            and        Stone!"
     )
     IRON = (
         "Iron",
         10,
         (173, 173, 173),
         (205, 172, 151),
-        1
+        1,
+        "Rusty rock of potential."
     )
     GOLD = (
         "Gold",
         25,
         (173, 173, 173),
         (223, 197, 123),
-        1
+        1,
+        "We're Rich!"
     )
 
-    def __init__(self, name, maxHealth, primaryColor, secondaryColor, dropCount):
+    def __init__(self, name, maxHealth, primaryColor, secondaryColor, dropCount, description):
         self._name = name
         self._maxHealth = maxHealth
         self._primaryColor = primaryColor
         self._secondaryColor = secondaryColor
-        self._dropItem = item(name, dropCount, primaryColor, secondaryColor, "material")
+        self._dropItem = item(name, dropCount, primaryColor, secondaryColor, "material", description)
 
     @property
     def name(self):
