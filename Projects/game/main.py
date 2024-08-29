@@ -2,9 +2,6 @@ import pygame as pg
 import random
 import math
 
-from patsy import origin
-from scipy.special import euler
-
 import Item
 from inventory import inventory
 from object import *
@@ -34,15 +31,17 @@ objectList = []
 objectFlashLength = 5
 reach = 100
 
+#pickaxe variables
 pickaxeAngle = 90
 swinging = False
 swingingDown = True
 swingSpeed = 5
 upperAngle = 90
 lowerAngle = 0
+mouseAngle = 0
 
 inventoryActive = False
-inventory = inventory(36)
+inventory = inventory(28)
 
 #function for finding an unoccupied location for a target
 def randomPos():
@@ -78,10 +77,8 @@ def createObject(object):
 #start function
 def start():
     for i in range(500):
-        if not random.randint(1, 4) == 4:
-            createObject(objectEnum.STONE)
-        else:
-            createObject(objectEnum.IRON)
+        choice = random.choices([objectEnum.STONE, objectEnum.IRON, objectEnum.GOLD], [10, 4, 1])
+        createObject(choice[0])
 
 #function to calculate angle between two points
 def angleBetween(p1, p2):
@@ -105,6 +102,8 @@ def update(events):
     global pickaxeAngle
     global swinging
     global swingingDown
+    global mouseAngle
+
     keys = pg.key.get_pressed()
 
     acc = pg.Vector2(0, 0)
@@ -119,43 +118,33 @@ def update(events):
         if keys[pg.K_d]:
             acc.x += moveAccMag
 
-    vel += acc
-    if vel.magnitude() > 0:
-        if keys[pg.K_LSHIFT]:
-            vel = vel.clamp_magnitude(sprintMaxSpeed)
-        else:
-            vel = vel.clamp_magnitude(maxSpeed)
-    pos += vel
-    if acc.magnitude() == 0:
-        vel *= 0.85
-    if vel.magnitude() < 0.2:
-        vel = pg.Vector2(0, 0)
 
-    # #collision
-    # collisionpasses = 2
-    # for i in range(collisionpasses):
-    #     for objectPos in objectPositions:
-    #         if isinstance(objectPos, pg.Vector2):
-    #             distance = middle.distance_to(objectPos - pos)
-    #             if middle.distance_to(objectPos - pos) < 29:
-    #                 angle = angleBetween(pos, objectPos)
-    #                 distanceDiff = 30 - distance
-    #                 pos -= pg.Vector2(math.cos(angle), math.sin(angle)) * distanceDiff
-    #                 vel = pg.Vector2(0, 0)
+    vel += acc
+
+    if not inventoryActive:
+        if vel.magnitude() > 0:
+            if keys[pg.K_LSHIFT]:
+                vel = vel.clamp_magnitude(sprintMaxSpeed)
+            else:
+                vel = vel.clamp_magnitude(maxSpeed)
+        pos += vel
+        if acc.magnitude() == 0:
+            vel *= 0.85
+        if vel.magnitude() < 0.1:
+            vel = pg.Vector2(0, 0)
+
 
     mousePos = pg.mouse.get_pos()
-    mouseAngle = math.radians(180 - angleBetween(middle, pg.Vector2(mousePos[0], mousePos[1])))
 
-    # debug
+    if not inventoryActive:
+        mouseAngle = math.radians(180 - angleBetween(middle, pg.Vector2(mousePos[0], mousePos[1])))
 
-    # pg.draw.circle(screen, (0, 255, 0), mousePos, 2)
-    # pg.draw.arc(screen, (255, 0, 0), (middle.x - 100, middle.y - 100, 200, 200), angle - math.radians(15), angle + math.radians(15), 45)
-
+    pg.draw.rect(screen, (50, 50, 50), [WIDTH * 0.58 - pos.x, HEIGHT * -1.035 - pos.y, WIDTH * 3.04, HEIGHT * 3.07])
     pg.draw.rect(screen, (92, 70, 41), [WIDTH * 0.6 - pos.x, HEIGHT * -1 - pos.y, WIDTH * 3, HEIGHT * 3])
+
+
     armSurface = pg.Surface((WIDTH, HEIGHT), pg.SRCALPHA)
-
     pg.draw.rect(armSurface, 'white', [middle.x, middle.y + 5, 20, 5])
-
 
     if swinging:
         if swingingDown:
@@ -176,11 +165,11 @@ def update(events):
     pg.draw.line(armSurface, 'burlywood3', (middle.x + 20, middle.y + 7.5), (middle.x + 20 + stickPos, middle.y + 7.5), 2)
     pg.draw.line(armSurface, 'silver', (middle.x + 20 + startPos, middle.y + 7.5), (middle.x + 20 + endPos, middle.y + 7.5), 3)
 
-    armRect = armSurface.get_rect()
+    rect = armSurface.get_rect()
+
     armSurface, rect = rotate_on_pivot(armSurface, math.degrees(mouseAngle), middle, middle)
+
     screen.blit(armSurface, rect)
-
-
 
     pg.draw.circle(screen, 'white', middle, 10)
 
@@ -200,7 +189,7 @@ def update(events):
                 pg.draw.circle(screen, (255, 255, 255), objectPosition - pos, 17)
                 pg.draw.rect(screen, (255, 0, 0), [objectPosition - pos - pg.Vector2(17, 25), pg.Vector2(34, 5)])
                 pg.draw.rect(screen, (0, 255, 0), [objectPosition - pos - pg.Vector2(17, 25), pg.Vector2(34 * (object.health / object.maxHealth), 5)])
-                if mouseclicked:
+                if pg.mouse.get_pressed(3)[0] and not inventoryActive:
                     if objectPosition.distance_to(mousePos + pos) <= 15:
                         if not swinging:
                             swinging = True
@@ -233,10 +222,10 @@ def update(events):
     if inventoryActive:
         pg.draw.rect(inventorySurface, (200, 200, 200, 230), [WIDTH * 0.05, HEIGHT * 0.1, WIDTH * 0.9, HEIGHT * 0.72]) # inventory background
 
-        pg.draw.rect(inventorySurface, (85, 85, 85, 230), [WIDTH * 0.835, HEIGHT * 0.105, WIDTH * 0.06, HEIGHT * 0.035]) # sort method button
+        pg.draw.rect(inventorySurface, (85, 85, 85, 230), [WIDTH * 0.645, HEIGHT * 0.105, WIDTH * 0.06, HEIGHT * 0.035]) # sort method button
         sorting = sortFont.render(inventory.sortingType, 1, (255, 255, 255))
         sortRect = sorting.get_rect()
-        sortRect.center = (WIDTH * 0.865, HEIGHT * 0.1220)
+        sortRect.center = (WIDTH * 0.675, HEIGHT * 0.1220)
         if mouseclicked and sortRect.collidepoint(mousePos):
             if inventory.sortingType == "Name":
                 inventory.sortingType = "Count"
@@ -245,21 +234,21 @@ def update(events):
 
         inventorySurface.blit(sorting, sortRect)
 
-        if mouseclicked and pg.Rect([WIDTH * 0.9, HEIGHT * 0.105, WIDTH * 0.021, HEIGHT * 0.035]).collidepoint(mousePos):
+        if mouseclicked and pg.Rect([WIDTH * 0.71, HEIGHT * 0.105, WIDTH * 0.021, HEIGHT * 0.035]).collidepoint(mousePos):
             if inventory.sortDown:
                 inventory.sortDown = False
             else:
                 inventory.sortDown = True
 
-        pg.draw.rect(inventorySurface, (85, 85, 85, 230), [WIDTH * 0.9, HEIGHT * 0.105, WIDTH * 0.021, HEIGHT * 0.035]) # sort direction button
-        if inventory.sortDown: # center = (WDITH * 0.9105, HEIGHT * 0.1225)
-            pg.draw.polygon(inventorySurface, (255, 255, 255, 255), [(WIDTH * 0.92, HEIGHT *  0.114275), (WIDTH * 0.9105, HEIGHT *  0.130725), (WIDTH * 0.901, HEIGHT *  0.114275)], 1)
+        pg.draw.rect(inventorySurface, (85, 85, 85, 230), [WIDTH * 0.71, HEIGHT * 0.105, WIDTH * 0.021, HEIGHT * 0.035]) # sort direction button
+        if inventory.sortDown:
+            pg.draw.polygon(inventorySurface, (255, 255, 255, 255), [(WIDTH * 0.73, HEIGHT *  0.114275), (WIDTH * 0.7205, HEIGHT *  0.130725), (WIDTH * 0.711, HEIGHT *  0.114275)], 1)
         else:
-            pg.draw.polygon(inventorySurface, (255, 255, 255, 255),[(WIDTH * 0.92, HEIGHT * 0.130725), (WIDTH * 0.9105, HEIGHT * 0.114275), (WIDTH * 0.901, HEIGHT * 0.130725)], 1)
+            pg.draw.polygon(inventorySurface, (255, 255, 255, 255),[(WIDTH * 0.73, HEIGHT * 0.130725), (WIDTH * 0.7205, HEIGHT * 0.114275), (WIDTH * 0.711, HEIGHT * 0.130725)], 1)
 
 
         for i in range(4):
-            for j in range(9):
+            for j in range(7):
                 pg.draw.rect(inventorySurface, (150, 150, 150, 230), [WIDTH * 0.075 + WIDTH * 0.095 * j, HEIGHT * 0.145 + HEIGHT * 0.16 * i, WIDTH * 0.09, HEIGHT * 0.15]) # inventory slots
         for i, item in enumerate(inventory.items):
             x = i % 9
@@ -276,6 +265,9 @@ def update(events):
             inventorySurface.blit(count, countRect)
             pg.draw.circle(inventorySurface, item.secondaryColor,(WIDTH * 0.13 + WIDTH * 0.095 * x, HEIGHT * 0.208 + HEIGHT * 0.16 * y), WIDTH * 0.025) # secondary color circle
             pg.draw.circle(inventorySurface, item.primaryColor,(WIDTH * 0.13 + WIDTH * 0.095 * x, HEIGHT * 0.208 + HEIGHT * 0.16 * y), WIDTH * 0.02) # primary color circle
+
+
+
 
 
 

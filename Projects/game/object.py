@@ -16,13 +16,20 @@ class objectEnum(Enum):
         (205, 172, 151),
         1
     )
+    GOLD = (
+        "Gold",
+        25,
+        (173, 173, 173),
+        (223, 197, 123),
+        1
+    )
 
     def __init__(self, name, maxHealth, primaryColor, secondaryColor, dropCount):
         self._name = name
         self._maxHealth = maxHealth
         self._primaryColor = primaryColor
         self._secondaryColor = secondaryColor
-        self._dropItem = item(name, dropCount, primaryColor, secondaryColor)
+        self._dropItem = item(name, dropCount, primaryColor, secondaryColor, "material")
 
     @property
     def name(self):
