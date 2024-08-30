@@ -2,13 +2,22 @@ from sympy import false
 
 
 class item:
+    nextid = 0
     def __init__(self, name, count, primaryColor, secondaryColor, type, description):
+        global nextid
+        try:
+            nextid
+        except NameError:
+            nextid = 0
+
         self._name = name
         self._count = count
         self._primaryColor = primaryColor
         self._secondaryColor = secondaryColor
         self._type = type
         self._description = description
+        self._itemid = nextid
+        nextid += 1
 
     @property
     def name(self):
@@ -37,6 +46,10 @@ class item:
     @property
     def description(self):
         return self._description
+
+    @property
+    def itemid(self):
+        return self._itemid
 
     def __str__(self):
         return f"{self._name} | {self.count} | {self.primaryColor} | {self.secondaryColor}"

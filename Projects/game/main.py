@@ -19,8 +19,9 @@ inventorySurface = pg.Surface((WIDTH, HEIGHT), pg.SRCALPHA)
 nameFont = pg.font.SysFont('Arial', 15)
 countFont = pg.font.SysFont('Arial', 10)
 sortFont = pg.font.SysFont('Arial', 20)
-infoNameFont = pg.font.SysFont('Arial', 30)
-infoDescriptionFont = pg.font.SysFont('Arial', 30)
+infoNameFont = pg.font.SysFont('Arial', 20)
+infoDescriptionFont = pg.font.SysFont('Arial', 17)
+infoButtonsFont = pg.font.SysFont('Arial', 25)
 
 clock = pg.time.Clock()
 running = True
@@ -47,6 +48,7 @@ mouseAngle = 0
 inventoryActive = False
 inventory = inventory(28)
 selected = -1
+equipped = -1
 descriptionHeight = 0
 
 #function for finding an unoccupied location for a target
@@ -85,6 +87,7 @@ def start():
     for i in range(500):
         choice = random.choices([objectEnum.STONE, objectEnum.IRON, objectEnum.GOLD], [10, 4, 1])
         createObject(choice[0])
+    inventory.add(Item.item('Iron Pick', 1, 'silver', 'burlywood3', "pickaxe", "Isn't it Iron Pick?\nI'm gonna kill myself"))
 
 #function to calculate angle between two points
 def angleBetween(p1, p2):
@@ -111,6 +114,7 @@ def update(events):
     global mouseAngle
     global selected
     global descriptionHeight
+    global equipped
 
     keys = pg.key.get_pressed()
 
@@ -170,10 +174,14 @@ def update(events):
     pickaxeRadius = 20
     startPos, endPos = pickaxeRadius * math.cos(math.radians(pickaxeAngle + 25)), pickaxeRadius * math.cos(math.radians(pickaxeAngle - 25))
     stickPos = pickaxeRadius * math.cos(math.radians(pickaxeAngle))
-    pg.draw.line(armSurface, 'burlywood3', (middle.x + 20, middle.y + 7.5), (middle.x + 20 + stickPos, middle.y + 7.5), 2)
-    pg.draw.line(armSurface, 'silver', (middle.x + 20 + startPos, middle.y + 7.5), (middle.x + 20 + endPos, middle.y + 7.5), 3)
 
-    rect = armSurface.get_rect()
+    if equipped != -1:
+        equippedItem = inventory.find(equipped)
+        if isinstance(equippedItem, Item.item):
+            pg.draw.line(armSurface, equippedItem.secondaryColor, (middle.x + 20, middle.y + 7.5),(middle.x + 20 + stickPos, middle.y + 7.5), 2)
+            pg.draw.line(armSurface, equippedItem.primaryColor, (middle.x + 20 + startPos, middle.y + 7.5),(middle.x + 20 + endPos, middle.y + 7.5), 3)
+    else:
+        pg.draw.rect(armSurface, 'white', [middle.x + 15, middle.y + 5, stickPos, 5])
 
     armSurface, rect = rotate_on_pivot(armSurface, math.degrees(mouseAngle), middle, middle)
 
@@ -272,17 +280,22 @@ def update(events):
             x = i % 9
             y = i // 9
             pg.draw.rect(inventorySurface, (220, 220, 220, 230), [WIDTH * 0.075 + WIDTH * 0.095 * x, HEIGHT * 0.265 + HEIGHT * 0.16 * y, WIDTH * 0.09, HEIGHT * 0.03]) # item name background
-            pg.draw.rect(inventorySurface, (220, 220, 220, 230), [WIDTH * 0.075 + WIDTH * 0.095 * x, HEIGHT * 0.145 + HEIGHT * 0.16 * y, WIDTH * 0.02, HEIGHT * 0.034]) # item count background
             name = nameFont.render(item.name, 1, (0, 0, 0)) # item name
             nameRect = name.get_rect()
             nameRect.center = (WIDTH * 0.12 + WIDTH * 0.095 * x, HEIGHT * 0.28 + HEIGHT * 0.16 * y)
-            count = countFont.render(str(item.count), 1, (0, 0, 0)) # item count
-            countRect = count.get_rect()
-            countRect.center = (WIDTH * 0.085 + WIDTH * 0.095 * x, HEIGHT * 0.162 + HEIGHT * 0.16 * y)
             inventorySurface.blit(name, nameRect)
-            inventorySurface.blit(count, countRect)
-            pg.draw.circle(inventorySurface, item.secondaryColor,(WIDTH * 0.13 + WIDTH * 0.095 * x, HEIGHT * 0.208 + HEIGHT * 0.16 * y), WIDTH * 0.025) # secondary color circle
-            pg.draw.circle(inventorySurface, item.primaryColor,(WIDTH * 0.13 + WIDTH * 0.095 * x, HEIGHT * 0.208 + HEIGHT * 0.16 * y), WIDTH * 0.02) # primary color circle
+
+            if item.type == "material":
+                pg.draw.rect(inventorySurface, (220, 220, 220, 230),[WIDTH * 0.075 + WIDTH * 0.095 * x, HEIGHT * 0.145 + HEIGHT * 0.16 * y, WIDTH * 0.02,HEIGHT * 0.034])  # item count background
+                count = countFont.render(str(item.count), 1, (0, 0, 0))  # item count
+                countRect = count.get_rect()
+                countRect.center = (WIDTH * 0.085 + WIDTH * 0.095 * x, HEIGHT * 0.162 + HEIGHT * 0.16 * y)
+                inventorySurface.blit(count, countRect)
+                pg.draw.circle(inventorySurface, item.secondaryColor,(WIDTH * 0.13 + WIDTH * 0.095 * x, HEIGHT * 0.208 + HEIGHT * 0.16 * y), WIDTH * 0.025) # secondary color circle
+                pg.draw.circle(inventorySurface, item.primaryColor,(WIDTH * 0.13 + WIDTH * 0.095 * x, HEIGHT * 0.208 + HEIGHT * 0.16 * y), WIDTH * 0.02) # primary color circle
+            if item.type == "pickaxe":
+                pg.draw.rect(inventorySurface, item.primaryColor, [WIDTH * 0.09 + WIDTH * 0.095 * x, HEIGHT * 0.17 + HEIGHT * 0.16 * y, WIDTH * 0.06, HEIGHT * 0.025])
+                pg.draw.rect(inventorySurface, item.secondaryColor, [WIDTH * 0.115 + WIDTH * 0.095 * x, HEIGHT * 0.195 + HEIGHT * 0.16 * y, WIDTH * 0.01, HEIGHT * 0.065])
 
         pg.draw.rect(inventorySurface, (180, 180, 180, 230), [WIDTH * 0.75, HEIGHT * 0.145, WIDTH * 0.185, HEIGHT * 0.63])
 
@@ -293,7 +306,7 @@ def update(events):
         if selected != -1:
             selectedItem = inventory.items[selected]
             if isinstance(selectedItem, Item.item):
-                itemName = nameFont.render(selectedItem.name, 1, (0, 0, 0))  # item name
+                itemName = infoNameFont.render(selectedItem.name, 1, (0, 0, 0))  # item name
                 itemNameRect = itemName.get_rect()
                 itemNameRect.center = (WIDTH * 0.8425, HEIGHT * 0.18)
                 inventorySurface.blit(itemName, itemNameRect)
@@ -302,12 +315,38 @@ def update(events):
                     center = (WIDTH * 0.8425, HEIGHT * 0.345)
                     pg.draw.circle(inventorySurface, selectedItem.secondaryColor, center, 50)
                     pg.draw.circle(inventorySurface, selectedItem.primaryColor, center, 40)
+                if selectedItem.type == "pickaxe":
+                    pg.draw.rect(inventorySurface, selectedItem.primaryColor,[WIDTH * 0.77, HEIGHT * 0.25, WIDTH * 0.145, HEIGHT * 0.05])
+                    pg.draw.rect(inventorySurface, selectedItem.secondaryColor,[WIDTH * 0.8305, HEIGHT * 0.3, WIDTH * 0.024, HEIGHT * 0.17])
 
-                itemDescription = nameFont.render(selectedItem.description, 1, (0, 0, 0))  # item name
-                itemDescriptionRect = itemDescription.get_rect()
-                itemDescriptionRect.midtop = (WIDTH * 0.8425, HEIGHT * 0.50)
-                descriptionHeight = itemDescriptionRect.height
-                inventorySurface.blit(itemDescription, itemDescriptionRect)
+                lineList = selectedItem.description.split('\n')
+                totalHeight = 0
+                for line in lineList:
+                    itemDescription = infoDescriptionFont.render(line, 1, (0, 0, 0)) # item description
+                    itemDescriptionRect = itemDescription.get_rect()
+                    itemDescriptionRect.midtop = (WIDTH * 0.8425, HEIGHT * 0.50 + totalHeight)
+                    inventorySurface.blit(itemDescription, itemDescriptionRect)
+                    totalHeight += itemDescriptionRect.height
+                descriptionHeight = totalHeight
+
+                if selectedItem.type == "pickaxe":
+                    if equipped == selectedItem.itemid:
+                        equipText = infoButtonsFont.render("Unequip", 1, (255, 255, 255))
+                        equipButton = pg.draw.rect(inventorySurface, (85, 85, 85, 230),[WIDTH * 0.7925, HEIGHT * 0.71, WIDTH * 0.1, HEIGHT * 0.05])
+                    else:
+                        equipText = infoButtonsFont.render("Equip", 1, (255, 255, 255))
+                        equipButton = pg.draw.rect(inventorySurface, (85, 85, 85, 230),[WIDTH * 0.8025, HEIGHT * 0.71, WIDTH * 0.08, HEIGHT * 0.05])
+                    equipRect = equipText.get_rect()
+                    equipRect.midtop = (WIDTH * 0.8425, HEIGHT * 0.71)
+                    inventorySurface.blit(equipText, equipRect)
+                    if mouseclicked and equipButton.collidepoint(mousePos):
+                        if equipped == selectedItem.itemid:
+                            equipped = -1
+                        else:
+                            equipped = selectedItem.itemid
+
+
+
 
 
 

@@ -8,7 +8,7 @@ class objectEnum(Enum):
         (173, 173, 173),
         (95, 95, 95),
         1,
-        "Rock            and        Stone!"
+        "Rock and Stone!"
     )
     IRON = (
         "Iron",

@@ -37,7 +37,12 @@ class inventory:
                 self._items.pop(self._items.index(item))
                 self.sort()
         return False
-    
+
+    def find(self, itemId):
+        for item in self._items:
+            if item.itemid == itemId:
+                return item
+        return False
     @property
     def items(self):
         return self._items
