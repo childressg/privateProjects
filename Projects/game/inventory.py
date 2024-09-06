@@ -34,7 +34,7 @@ class inventory:
                 self.sort()
                 return True
             else:
-                self._items.pop(self._items.index(item))
+                self._items.remove(item)
                 self.sort()
         return False
 

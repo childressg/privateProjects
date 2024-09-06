@@ -4,7 +4,7 @@ from enum import Enum
 class objectEnum(Enum):
     STONE = (
         "Stone",
-        5,
+        5.0,
         (173, 173, 173),
         (95, 95, 95),
         1,
@@ -12,7 +12,7 @@ class objectEnum(Enum):
     )
     IRON = (
         "Iron",
-        10,
+        10.0,
         (173, 173, 173),
         (205, 172, 151),
         1,
@@ -20,7 +20,7 @@ class objectEnum(Enum):
     )
     GOLD = (
         "Gold",
-        25,
+        25.0,
         (173, 173, 173),
         (223, 197, 123),
         1,

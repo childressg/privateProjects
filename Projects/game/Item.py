@@ -3,7 +3,7 @@ from sympy import false
 
 class item:
     nextid = 0
-    def __init__(self, name, count, primaryColor, secondaryColor, type, description):
+    def __init__(self, name, count, primaryColor, secondaryColor, type, description, damage=None, durability=None):
         global nextid
         try:
             nextid
@@ -17,6 +17,8 @@ class item:
         self._type = type
         self._description = description
         self._itemid = nextid
+        self._damage = damage
+        self._durability = durability
         nextid += 1
 
     @property
@@ -51,6 +53,18 @@ class item:
     def itemid(self):
         return self._itemid
 
+    @property
+    def damage(self):
+        return self._damage
+
+    @property
+    def durability(self):
+        return self._durability
+
+    @durability.setter
+    def durability(self, durability):
+        self._durability = durability
+
     def __str__(self):
         return f"{self._name} | {self.count} | {self.primaryColor} | {self.secondaryColor}"
 
@@ -60,7 +74,9 @@ class item:
     def __eq__(self, other):
         if not isinstance(other, item):
             return false
+        if self.type == "pickaxe":
+            return self._itemid == other._itemid
         return self._name == other._name
 
     def __copy__(self):
-        return item(self._name, self._count, self._primaryColor, self._secondaryColor, self._type, self._description)
+        return item(self._name, self._count, self._primaryColor, self._secondaryColor, self._type, self._description, self._damage, self._durability)
