@@ -21,7 +21,7 @@ class ObjectRenderer:
         for i in range(GRADIENT_COUNT):
             pg.draw.rect(self.screen, darken(CEILING_COLOR, i * GRADIENT_STRENGTH), (0, i * gradient_height, WIDTH, gradient_height)) # ceiling
         for i in range(GRADIENT_COUNT):
-            pg.draw.rect(self.screen, darken(FLOOR_COLOR, (GRADIENT_COUNT - i) * GRADIENT_STRENGTH), (0, HALF_HEIGHT + gradient_height * i, WIDTH, gradient_height)) # floor
+            pg.draw.rect(self.screen, darken(FLOOR_COLOR, i * GRADIENT_STRENGTH), (0, HEIGHT - gradient_height * (i + 1) , WIDTH, gradient_height)) # floor
 
     def render_game_objects(self):
         list_objects = sorted(self.game.raycasting.objects_to_render, key=lambda t: t[0], reverse=True)
