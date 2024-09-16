@@ -411,7 +411,7 @@ def update(events):
                 slot = pg.draw.rect(overlaySurface, (150, 150, 150, 230),[WIDTH * 0.05 + WIDTH * 0.095 * j, HEIGHT * 0.145 + HEIGHT * 0.16 * i, WIDTH * 0.09, HEIGHT * 0.15])  # inventory slots
                 if mouseclicked and slot.collidepoint(mousePos):
                     if index < len(inventory.items):
-                        craftingSelected = indexw
+                        craftingSelected = index
 
         for i, item in enumerate(inventory.items):
             x = i % 9

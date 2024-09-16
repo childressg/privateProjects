@@ -1,4 +1,3 @@
-from sympy import false
 
 
 class item:
@@ -73,7 +72,7 @@ class item:
 
     def __eq__(self, other):
         if not isinstance(other, item):
-            return false
+            return False
         if self.type == "pickaxe":
             return self._itemid == other._itemid
         return self._name == other._name
