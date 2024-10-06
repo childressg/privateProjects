@@ -17,7 +17,9 @@ class inventory:
     def add(self, item):
         if item not in self._items:
             if not len(self._items) == self.slots:
-                newItem = copy(item)
+                newItem = item
+                if not item.type == "pickaxe":
+                    newItem = copy(item)
                 self._items.append(newItem)
         else:
             existingItem = self._items[self._items.index(item)]

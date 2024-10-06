@@ -131,3 +131,6 @@ class Object:
     @property
     def dropItem(self):
         return self._dropItem
+
+    def display(self, imageNum, screen, loc):
+        screen.blit(self._images[imageNum], loc)

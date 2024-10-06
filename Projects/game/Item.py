@@ -19,6 +19,7 @@ class item:
         self._itemid = nextid
         self._damage = damage
         self._durability = durability
+        self._max_durability = durability
         nextid += 1
 
     @property
@@ -61,6 +62,10 @@ class item:
     def durability(self, durability):
         self._durability = durability
 
+    @property
+    def max_durability(self):
+        return self._max_durability
+
     def __str__(self):
         return f"{self._name} | {self.count}"
 
@@ -76,3 +81,6 @@ class item:
 
     def __copy__(self):
         return item(self._name, self._count, self._image_path, self._type, self._description, self._damage, self._durability)
+
+    def display(self, screen, loc, size):
+        screen.blit(pg.transform.scale(self._image, size), loc)
