@@ -5,6 +5,8 @@ import math
 import Item
 from inventory import inventory
 from object import *
+from copy import copy
+import recipe
 
 WIDTH = 1000
 HEIGHT = 600
@@ -53,6 +55,7 @@ descriptionHeight = 0
 
 craftingActive = False
 craftingSelected = -1
+craftingInventory = [[None, None, None], [None, None, None], [None, None, None]]
 
 #function for finding an unoccupied location for a target
 def randomPos():
@@ -90,7 +93,14 @@ def start():
     for i in range(500):
         choice = random.choices([objectEnum.STONE, objectEnum.IRON, objectEnum.GOLD], [10, 4, 1])
         createObject(choice[0])
-    inventory.add(Item.item('Iron Pick', 1, 'silver', 'burlywood3', "pickaxe", "Isn't it Iron Pick?\nI'm gonna kill myself", 1, 10))
+    inventory.add(Item.item('Iron Pick', 1, "sprites/items/pickaxe.png", "pickaxe", "Isn't it Iron Pick?\nI'm gonna kill myself", 100, 10))
+
+def checkInventoryEmpty():
+    for row in craftingInventory:
+        for item in row:
+            if not item is None:
+                return False
+    return True
 
 #function to calculate angle between two points
 def angleBetween(p1, p2):
@@ -120,12 +130,13 @@ def update(events):
     global craftingSelected
     global descriptionHeight
     global equipped
+    global craftingInventory
 
     keys = pg.key.get_pressed()
 
     acc = pg.Vector2(0, 0)
     # movement
-    if not inventoryActive:
+    if not (inventoryActive or craftingActive):
         if keys[pg.K_w]:
             acc.y -= moveAccMag
         if keys[pg.K_s]:
@@ -138,7 +149,7 @@ def update(events):
 
     vel += acc
 
-    if not inventoryActive:
+    if not (inventoryActive or craftingActive):
         if vel.magnitude() > 0:
             if keys[pg.K_LSHIFT]:
                 vel = vel.clamp_magnitude(sprintMaxSpeed)
@@ -153,7 +164,7 @@ def update(events):
 
     mousePos = pg.mouse.get_pos()
 
-    if not inventoryActive:
+    if not (inventoryActive or craftingActive):
         mouseAngle = math.radians(180 - angleBetween(middle, pg.Vector2(mousePos[0], mousePos[1])))
 
     pg.draw.rect(screen, (50, 50, 50), [WIDTH * 0.58 - pos.x, HEIGHT * -1.035 - pos.y, WIDTH * 3.04, HEIGHT * 3.07])
@@ -163,7 +174,7 @@ def update(events):
     armSurface = pg.Surface((WIDTH, HEIGHT), pg.SRCALPHA)
     pg.draw.rect(armSurface, 'white', [middle.x, middle.y + 5, 20, 5])
 
-    if swinging:
+    if swinging and not (inventoryActive or craftingActive):
         if swingingDown:
             pickaxeAngle -= swingSpeed
             if pickaxeAngle <= lowerAngle:
@@ -183,8 +194,8 @@ def update(events):
     if equipped != -1:
         equippedItem = inventory.find(equipped)
         if isinstance(equippedItem, Item.item):
-            pg.draw.line(armSurface, equippedItem.secondaryColor, (middle.x + 20, middle.y + 7.5),(middle.x + 20 + stickPos, middle.y + 7.5), 2)
-            pg.draw.line(armSurface, equippedItem.primaryColor, (middle.x + 20 + startPos, middle.y + 7.5),(middle.x + 20 + endPos, middle.y + 7.5), 3)
+            pg.draw.line(armSurface, (0, 0, 0), (middle.x + 20, middle.y + 7.5),(middle.x + 20 + stickPos, middle.y + 7.5), 2)
+            pg.draw.line(armSurface, (0, 0, 0), (middle.x + 20 + startPos, middle.y + 7.5),(middle.x + 20 + endPos, middle.y + 7.5), 3)
     else:
         pg.draw.rect(armSurface, 'white', [middle.x + 15, middle.y + 5, stickPos, 5])
 
@@ -195,20 +206,22 @@ def update(events):
     pg.draw.circle(screen, 'white', middle, 10)
 
     #mouse click
-    mouseclicked = False
+    mouseclicked = [False, False]
     for event in events:
         if event.type == pg.MOUSEBUTTONDOWN:
             if event.button == pg.BUTTON_LEFT:
-                mouseclicked = True
+                mouseclicked[0] = True
+            if event.button == pg.BUTTON_RIGHT:
+                mouseclicked[1] = True
 
     for object in objectList:
         objectPosition = object.position
         if isinstance(objectPosition, pg.Vector2):
             distance = middle.distance_to(objectPosition - pos)
             if distance <= reach:
-                pg.draw.circle(screen, (255, 255, 255), objectPosition - pos, 17)
+                screen.blit(object.images[1], object.position - pos - (25, 25))
                 pg.draw.rect(screen, (255, 0, 0), [objectPosition - pos - pg.Vector2(17, 25), pg.Vector2(34, 5)])
-                pg.draw.rect(screen, (0, 255, 0), [objectPosition - pos - pg.Vector2(17, 25), pg.Vector2(34 * (object.health / object.maxHealth), 5)])
+                pg.draw.rect(screen, (0, 255, 0), [objectPosition - pos - pg.Vector2(17, 25), pg.Vector2(34 * (object.health / object.max_health), 5)])
                 if pg.mouse.get_pressed(3)[0] and not inventoryActive:
                     if objectPosition.distance_to(mousePos + pos) <= 15:
                         if not swinging:
@@ -229,15 +242,16 @@ def update(events):
                                         equipped = -1
                                 newPos = randomPos()
                                 object.position = newPos
-                                object.health = object.maxHealth
+                                object.health = object.max_health
                                 object.flashTick = 0
                                 if isinstance(object.dropItem, Item.item):
                                     inventory.add(object.dropItem)
         if object.flashTick > 0:
             object.flashTick -= 1
+            screen.blit(object.images[2], object.position - pos - (25, 25))
+        else:
+            screen.blit(object.images[0], object.position - pos - (25, 25))
 
-        pg.draw.circle(screen, object.getColor()[1], object.position - pos, 15)
-        pg.draw.circle(screen, object.getColor()[0], object.position - pos, 12)
 
 
 
@@ -252,10 +266,22 @@ def update(events):
                     if craftingActive:
                         craftingActive = False
                         craftingSelected = -1
+                        for row in craftingInventory:
+                            for item in row:
+                                if item != None:
+                                    inventory.add(item)
+                        craftingInventory = [[None, None, None], [None, None, None], [None, None, None]]
+                        craftingSelected = -1
                     inventoryActive = True
             if event.key == pg.K_c:
                 if craftingActive:
                     craftingActive = False
+                    craftingSelected = -1
+                    for row in craftingInventory:
+                        for item in row:
+                            if item != None:
+                                inventory.add(item)
+                    craftingInventory = [[None, None, None], [None, None, None], [None, None, None]]
                     craftingSelected = -1
                 else:
                     if inventoryActive:
@@ -270,7 +296,7 @@ def update(events):
         sorting = sortFont.render(inventory.sortingType, 1, (255, 255, 255))
         sortRect = sorting.get_rect()
         sortRect.center = (WIDTH * 0.675, HEIGHT * 0.1220)
-        if mouseclicked and sortRect.collidepoint(mousePos):
+        if mouseclicked[0] and sortRect.collidepoint(mousePos):
             if inventory.sortingType == "Name":
                 inventory.sortingType = "Count"
             else:
@@ -279,7 +305,7 @@ def update(events):
 
         overlaySurface.blit(sorting, sortRect)
 
-        if mouseclicked and pg.Rect([WIDTH * 0.714, HEIGHT * 0.105, WIDTH * 0.021, HEIGHT * 0.035]).collidepoint(mousePos):
+        if mouseclicked[0] and pg.Rect([WIDTH * 0.714, HEIGHT * 0.105, WIDTH * 0.021, HEIGHT * 0.035]).collidepoint(mousePos):
             if inventory.sortDown:
                 inventory.sortDown = False
             else:
@@ -299,13 +325,16 @@ def update(events):
                 if index == inventorySelected:
                     pg.draw.rect(overlaySurface, (100, 100, 100, 230), [WIDTH * 0.07 + WIDTH * 0.095 * j, HEIGHT * 0.135 + HEIGHT * 0.16 * i, WIDTH * 0.1, HEIGHT * 0.17])
                 slot = pg.draw.rect(overlaySurface, (150, 150, 150, 230), [WIDTH * 0.075 + WIDTH * 0.095 * j, HEIGHT * 0.145 + HEIGHT * 0.16 * i, WIDTH * 0.09, HEIGHT * 0.15]) # inventory slots
-                if mouseclicked and slot.collidepoint(mousePos):
+                if mouseclicked[0] and slot.collidepoint(mousePos):
                     if index < len(inventory.items):
                         inventorySelected = index
 
         for i, item in enumerate(inventory.items):
             x = i % 9
             y = i // 9
+
+            overlaySurface.blit(pg.transform.scale(item.image, (WIDTH * 0.09, HEIGHT * 0.15)),(WIDTH * 0.075 + WIDTH * 0.095 * x, HEIGHT * 0.145 + HEIGHT * 0.16 * y))
+
             pg.draw.rect(overlaySurface, (220, 220, 220, 230), [WIDTH * 0.075 + WIDTH * 0.095 * x, HEIGHT * 0.265 + HEIGHT * 0.16 * y, WIDTH * 0.09, HEIGHT * 0.03]) # item name background
             name = nameFont.render(item.name, 1, (0, 0, 0)) # item name
             nameRect = name.get_rect()
@@ -318,11 +347,6 @@ def update(events):
                 countRect = count.get_rect()
                 countRect.center = (WIDTH * 0.085 + WIDTH * 0.095 * x, HEIGHT * 0.162 + HEIGHT * 0.16 * y)
                 overlaySurface.blit(count, countRect)
-                pg.draw.circle(overlaySurface, item.secondaryColor,(WIDTH * 0.13 + WIDTH * 0.095 * x, HEIGHT * 0.208 + HEIGHT * 0.16 * y), WIDTH * 0.025) # secondary color circle
-                pg.draw.circle(overlaySurface, item.primaryColor,(WIDTH * 0.13 + WIDTH * 0.095 * x, HEIGHT * 0.208 + HEIGHT * 0.16 * y), WIDTH * 0.02) # primary color circle
-            if item.type == "pickaxe":
-                pg.draw.rect(overlaySurface, item.primaryColor, [WIDTH * 0.09 + WIDTH * 0.095 * x, HEIGHT * 0.17 + HEIGHT * 0.16 * y, WIDTH * 0.06, HEIGHT * 0.025])
-                pg.draw.rect(overlaySurface, item.secondaryColor, [WIDTH * 0.115 + WIDTH * 0.095 * x, HEIGHT * 0.195 + HEIGHT * 0.16 * y, WIDTH * 0.01, HEIGHT * 0.065])
 
         pg.draw.rect(overlaySurface, (180, 180, 180, 230), [WIDTH * 0.75, HEIGHT * 0.145, WIDTH * 0.185, HEIGHT * 0.63])
 
@@ -338,13 +362,7 @@ def update(events):
                 itemNameRect.center = (WIDTH * 0.8425, HEIGHT * 0.18)
                 overlaySurface.blit(itemName, itemNameRect)
 
-                if selectedItem.type == "material":
-                    center = (WIDTH * 0.8425, HEIGHT * 0.345)
-                    pg.draw.circle(overlaySurface, selectedItem.secondaryColor, center, 50)
-                    pg.draw.circle(overlaySurface, selectedItem.primaryColor, center, 40)
-                if selectedItem.type == "pickaxe":
-                    pg.draw.rect(overlaySurface, selectedItem.primaryColor,[WIDTH * 0.77, HEIGHT * 0.25, WIDTH * 0.145, HEIGHT * 0.05])
-                    pg.draw.rect(overlaySurface, selectedItem.secondaryColor,[WIDTH * 0.8305, HEIGHT * 0.3, WIDTH * 0.024, HEIGHT * 0.17])
+                overlaySurface.blit(pg.transform.scale(selectedItem.image, (WIDTH * 0.165, HEIGHT * 0.27)), (WIDTH * 0.76, HEIGHT * 0.21))
 
                 lineList = selectedItem.description.split('\n')
                 totalHeight = 0
@@ -366,7 +384,7 @@ def update(events):
                     equipRect = equipText.get_rect()
                     equipRect.midtop = (WIDTH * 0.8425, HEIGHT * 0.71)
                     overlaySurface.blit(equipText, equipRect)
-                    if mouseclicked and equipButton.collidepoint(mousePos):
+                    if mouseclicked[0] and equipButton.collidepoint(mousePos):
                         if equipped == selectedItem.itemid:
                             equipped = -1
                         else:
@@ -375,12 +393,11 @@ def update(events):
     if craftingActive:
         pg.draw.rect(overlaySurface, (200, 200, 200, 230), [WIDTH * 0.025, HEIGHT * 0.1, WIDTH * 0.95, HEIGHT * 0.72]) # crafting background
 
-        pg.draw.rect(overlaySurface, (85, 85, 85, 230),
-                     [WIDTH * 0.62, HEIGHT * 0.105, WIDTH * 0.06, HEIGHT * 0.035])  # sort method button
+        pg.draw.rect(overlaySurface, (85, 85, 85, 230), [WIDTH * 0.62, HEIGHT * 0.105, WIDTH * 0.06, HEIGHT * 0.035])  # sort method button
         sorting = sortFont.render(inventory.sortingType, 1, (255, 255, 255))
         sortRect = sorting.get_rect()
         sortRect.center = (WIDTH * 0.65, HEIGHT * 0.1220)
-        if mouseclicked and sortRect.collidepoint(mousePos):
+        if mouseclicked[0] and sortRect.collidepoint(mousePos):
             if inventory.sortingType == "Name":
                 inventory.sortingType = "Count"
             else:
@@ -389,7 +406,7 @@ def update(events):
 
         overlaySurface.blit(sorting, sortRect)
 
-        if mouseclicked and pg.Rect([WIDTH * 0.689, HEIGHT * 0.105, WIDTH * 0.021, HEIGHT * 0.035]).collidepoint(
+        if mouseclicked[0] and pg.Rect([WIDTH * 0.689, HEIGHT * 0.105, WIDTH * 0.021, HEIGHT * 0.035]).collidepoint(
                 mousePos):
             if inventory.sortDown:
                 inventory.sortDown = False
@@ -409,13 +426,16 @@ def update(events):
                 if index == craftingSelected:
                     pg.draw.rect(overlaySurface, (100, 100, 100, 230),[WIDTH * 0.045 + WIDTH * 0.095 * j, HEIGHT * 0.135 + HEIGHT * 0.16 * i, WIDTH * 0.1, HEIGHT * 0.17])
                 slot = pg.draw.rect(overlaySurface, (150, 150, 150, 230),[WIDTH * 0.05 + WIDTH * 0.095 * j, HEIGHT * 0.145 + HEIGHT * 0.16 * i, WIDTH * 0.09, HEIGHT * 0.15])  # inventory slots
-                if mouseclicked and slot.collidepoint(mousePos):
+                if mouseclicked[0] and slot.collidepoint(mousePos):
                     if index < len(inventory.items):
                         craftingSelected = index
 
         for i, item in enumerate(inventory.items):
             x = i % 9
             y = i // 9
+
+            overlaySurface.blit(pg.transform.scale(item.image, (WIDTH * 0.09, HEIGHT * 0.15)),(WIDTH * 0.05 + WIDTH * 0.095 * x, HEIGHT * 0.145 + HEIGHT * 0.16 * y))
+
             pg.draw.rect(overlaySurface, (220, 220, 220, 230), [WIDTH * 0.05 + WIDTH * 0.095 * x, HEIGHT * 0.265 + HEIGHT * 0.16 * y, WIDTH * 0.09, HEIGHT * 0.03]) # item name background
             name = nameFont.render(item.name, 1, (0, 0, 0)) # item name
             nameRect = name.get_rect()
@@ -428,11 +448,63 @@ def update(events):
                 countRect = count.get_rect()
                 countRect.center = (WIDTH * 0.06 + WIDTH * 0.095 * x, HEIGHT * 0.162 + HEIGHT * 0.16 * y)
                 overlaySurface.blit(count, countRect)
-                pg.draw.circle(overlaySurface, item.secondaryColor,(WIDTH * 0.105 + WIDTH * 0.095 * x, HEIGHT * 0.208 + HEIGHT * 0.16 * y), WIDTH * 0.025) # secondary color circle
-                pg.draw.circle(overlaySurface, item.primaryColor,(WIDTH * 0.105 + WIDTH * 0.095 * x, HEIGHT * 0.208 + HEIGHT * 0.16 * y), WIDTH * 0.02) # primary color circle
-            if item.type == "pickaxe":
-                pg.draw.rect(overlaySurface, item.primaryColor, [WIDTH * 0.065 + WIDTH * 0.095 * x, HEIGHT * 0.17 + HEIGHT * 0.16 * y, WIDTH * 0.06, HEIGHT * 0.025])
-                pg.draw.rect(overlaySurface, item.secondaryColor, [WIDTH * 0.09 + WIDTH * 0.095 * x, HEIGHT * 0.195 + HEIGHT * 0.16 * y, WIDTH * 0.01, HEIGHT * 0.065])
+
+        for i in range(3):
+            for j in range(3):
+                slot = pg.draw.rect(overlaySurface, (150, 150, 150, 230), [WIDTH * 0.729 + WIDTH * 0.077 * j, HEIGHT * 0.145 + HEIGHT * 0.13 * i, WIDTH * 0.072, HEIGHT * 0.12])
+                craftingItem = craftingInventory[i][j]
+                if craftingItem != None:
+                    craftingItemImage = pg.transform.scale(craftingItem.image, (WIDTH * 0.072, HEIGHT * 0.12))
+                    overlaySurface.blit(craftingItemImage, (WIDTH * 0.729 + WIDTH * 0.077 * j, HEIGHT * 0.145 + HEIGHT * 0.13 * i))
+                if slot.collidepoint(mousePos):
+                    if mouseclicked[0] and craftingSelected != -1 and craftingInventory[i][j] is None:
+                        selectedItem = inventory.items[craftingSelected]
+                        if selectedItem.type == "pickaxe":
+                            inventory.remove(selectedItem)
+                            craftingSelected = -1
+                            craftingInventory[i][j] = selectedItem
+                        else:
+                            itemCopy = copy(selectedItem)
+                            itemCopy.count = 1
+                            if selectedItem.count == 1:
+                                craftingSelected = -1
+                            inventory.remove(itemCopy)
+                            craftingInventory[i][j] = itemCopy
+                    if mouseclicked[1] and craftingInventory[i][j] is not None:
+                        inventory.add(craftingInventory[i][j])
+                        craftingInventory[i][j] = None
+
+        pg.draw.rect(overlaySurface, (150, 150, 150, 230), [WIDTH * 0.798, HEIGHT * 0.535, WIDTH * 0.09, HEIGHT * 0.15])
+        if not checkInventoryEmpty():
+            pg.draw.rect(overlaySurface, (85, 85, 85, 230), [WIDTH * 0.883, HEIGHT * 0.105, WIDTH * 0.072, HEIGHT * 0.035]) # clear
+            clear = sortFont.render("Clear", 1, (255, 255, 255))
+            clearRect = clear.get_rect()
+            clearRect.center = (WIDTH * 0.919, HEIGHT * 0.1220)
+            overlaySurface.blit(clear, clearRect)
+            if mouseclicked[0] and clearRect.collidepoint(mousePos):
+                for row in craftingInventory:
+                    for item in row:
+                        if item != None:
+                            inventory.add(item)
+                craftingInventory = [[None, None, None], [None, None, None], [None, None, None]]
+                craftingSelected = -1
+
+            recipeOutput = recipe.checkRecipes(craftingInventory)
+            if not recipeOutput is None:
+                pg.draw.rect(overlaySurface, (85, 85, 85, 230),[WIDTH * 0.806, HEIGHT * 0.695, WIDTH * 0.072, HEIGHT * 0.035])  # craft
+                craft = sortFont.render("Craft", 1, (255, 255, 255))
+                craftRect = craft.get_rect()
+                craftRect.center = (WIDTH * 0.842, HEIGHT * 0.712)
+                overlaySurface.blit(craft, craftRect)
+                overlaySurface.blit(pg.transform.scale(recipeOutput.image, (WIDTH * 0.09, HEIGHT * 0.15)), (WIDTH * 0.798, HEIGHT * 0.535))
+                if mouseclicked[0] and craftRect.collidepoint(mousePos):
+                    craftingInventory = [[None, None, None], [None, None, None], [None, None, None]]
+                    craftingSelected = -1
+                    inventory.add(recipeOutput)
+
+
+
+
 
 
 
