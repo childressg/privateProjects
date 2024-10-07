@@ -6,14 +6,17 @@ recipeList = []
 
 def itemsFromNames(data):
     output = []
-    for row in data:
-        outRow = []
-        for value in row:
-            if value is None:
-                outRow.append(None)
-            else:
-                outRow.append(item(value, None, None, None, None, None, None))
-        output.append(outRow)
+    for dataset in data:
+        outset = []
+        for row in dataset:
+            outRow = []
+            for value in row:
+                if value is None:
+                    outRow.append(None)
+                else:
+                    outRow.append(item(value, None, None, None, None, None, None))
+            outset.append(outRow)
+        output.append(outset)
     return output
 
 def testEntry(this, other):
@@ -29,22 +32,26 @@ class Recipe:
         self._outputItem = outputItem
 
     def __eq__(self, other):
-        for i in range(len(self._data)):
-            for j in range(len(self._data[i])):
-                if not testEntry(self._data[i][j], other._data[i][j]):
-                    return False
-        return True
+        for dataset in self._data:
+            match = True
+            for i in range(len(dataset)):
+                for j in range(len(dataset[i])):
+                    if not testEntry(dataset[i][j], other._data[0][i][j]):
+                        match = False
+            if match:
+                return True
+        return False
 
     @property
     def outputItem(self):
         return self._outputItem
 
 class recipeEnum(Enum):
-    IRON_PICK = ([
+    IRON_PICK = ([[
         ["Iron", "Iron", "Iron"],
         [None, "Stone", None],
         [None, "Stone", None]
-    ],
+    ]],
     item('Iron Pick', 1, "sprites/items/pickaxe.png", "pickaxe", "Isn't it Iron Pick?\nI'm gonna kill myself", 1, 10)
     )
 

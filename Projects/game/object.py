@@ -9,11 +9,10 @@ class objectEnum(Enum):
         "sprites/objects/stone.png",
         "sprites/objects/stone_outline.png",
         "sprites/objects/stone_flash.png",
-        50,
-        50,
-        1,
-        "Rock and Stone!",
-        "sprites/items/stone_item.png"
+        (50, 50),
+        (25, 25),
+        (0, 0),
+        item("Stone", 1, "sprites/items/stone_item.png", "material", "Rock and Stone!")
     )
     IRON = (
         "Iron",
@@ -21,11 +20,10 @@ class objectEnum(Enum):
         "sprites/objects/iron.png",
         "sprites/objects/ore_outline.png",
         "sprites/objects/ore_flash.png",
-        50,
-        50,
-        1,
-        "Rusty rock of potential.",
-        "sprites/items/iron_item.png"
+        (50, 50),
+        (25, 25),
+        (0, 0),
+        item("Iron", 1, "sprites/items/iron_item.png", "material", ":)")
     )
     GOLD = (
         "Gold",
@@ -33,22 +31,33 @@ class objectEnum(Enum):
         "sprites/objects/gold.png",
         "sprites/objects/ore_outline.png",
         "sprites/objects/ore_flash.png",
-        50,
-        50,
-        1,
-        "We're Rich!",
-        "sprites/items/gold_item.png"
+        (50, 50),
+        (25, 25),
+        (0, 0),
+        item("Gold", 1, "sprites/items/gold_item.png", "material", "We're Rich!")
+    )
+    TREE = (
+        "Tree",
+        10.0,
+        "sprites/objects/tree.png",
+        "sprites/objects/tree_outline.png",
+        "sprites/objects/tree_trunk_flash.png",
+        (50 ,100),
+        (25, 92),
+        (0, 70),
+        item("Wood", 1, "sprites/items/stone_item.png", "material", "splintery")
     )
 
-    def __init__(self, name, max_health, main_path, outline_path, flash_path, image_width, image_height, drop_count, description, item_path):
+    def __init__(self, name, max_health, main_path, outline_path, flash_path, image_size, image_offset, bar_offset, drop_item):
         self._name = name
         self._max_health = max_health
         self._main_path = main_path
         self._outline_path = outline_path
         self._flash_path = flash_path
-        self._dropItem = item(name, drop_count, item_path, "material", description)
-        self._image_width = image_width
-        self._image_height = image_height
+        self._dropItem = drop_item
+        self._image_size = image_size
+        self._image_offset = image_offset
+        self._bar_offset = bar_offset
 
     @property
     def name(self):
@@ -75,24 +84,30 @@ class objectEnum(Enum):
         return self._dropItem
 
     @property
-    def image_width(self):
-        return self._image_width
+    def image_size(self):
+        return self._image_size
 
     @property
-    def image_height(self):
-        return self._image_height
+    def image_offset(self):
+        return self._image_offset
+
+    @property
+    def bar_offset(self):
+        return self._bar_offset
 
 class Object:
     def __init__(self, objectInfo, position):
         if isinstance(objectInfo, objectEnum):
             self._health = objectInfo.max_health
             self._max_health = objectInfo.max_health
-            self._images = (pg.transform.scale(pg.image.load(objectInfo.main_path).convert_alpha(), (objectInfo.image_width, objectInfo.image_height)),
-                            pg.transform.scale(pg.image.load(objectInfo.outline_path).convert_alpha(), (objectInfo.image_width, objectInfo.image_height)),
-                            pg.transform.scale(pg.image.load(objectInfo.flash_path).convert_alpha(), (objectInfo.image_width, objectInfo.image_height)))
+            self._images = (pg.transform.scale(pg.image.load(objectInfo.main_path).convert_alpha(), objectInfo.image_size),
+                            pg.transform.scale(pg.image.load(objectInfo.outline_path).convert_alpha(), objectInfo.image_size),
+                            pg.transform.scale(pg.image.load(objectInfo.flash_path).convert_alpha(), objectInfo.image_size))
             self._position = position
             self._flashTick = 0
             self._dropItem = objectInfo.dropItem
+            self._offset = objectInfo.image_offset
+            self._bar_offset = objectInfo.bar_offset
         else:
             print("Object object not created correctly!")
 
@@ -132,5 +147,13 @@ class Object:
     def dropItem(self):
         return self._dropItem
 
+    @property
+    def offset(self):
+        return self._offset
+
+    @property
+    def bar_offset(self):
+        return self._bar_offset
+
     def display(self, imageNum, screen, loc):
-        screen.blit(self._images[imageNum], loc)
+        return screen.blit(self._images[imageNum], loc)
