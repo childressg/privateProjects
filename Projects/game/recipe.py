@@ -2,6 +2,8 @@ from enum import Enum
 from Item import item
 from copy import copy
 
+from Projects.game.Item import ItemType
+
 recipeList = []
 
 def itemsFromNames(data):
@@ -49,10 +51,21 @@ class Recipe:
 class recipeEnum(Enum):
     IRON_PICK = ([[
         ["Iron", "Iron", "Iron"],
-        [None, "Stone", None],
-        [None, "Stone", None]
+        [None, "Wood", None],
+        [None, "Wood", None]
     ]],
-    item('Iron Pick', 1, "sprites/items/pickaxe.png", "pickaxe", "Isn't it Iron Pick?\nI'm gonna kill myself", 1, 10)
+                item('Iron Pick', 1, "sprites/items/pickaxe.png", ItemType.Tool, "Isn't it Iron Pick?\nI'm gonna kill myself", 1, 10)
+    )
+    IRON_AXE = ([[
+        [None, "Iron", "Iron"],
+        [None, "Wood", "Iron"],
+        [None, "Wood", None]
+    ],[
+        ["Iron", "Iron", None],
+        ["Iron", "Wood", None],
+        [None, "Wood", None]
+    ]],
+                 item('Iron Axe', 1, "sprites/items/axe.png", ItemType.Tool,"sharp", 1, 10)
     )
 
     def __init__(self, data, outputItem):

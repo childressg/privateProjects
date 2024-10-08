@@ -104,7 +104,8 @@ def start():
         choice = random.choices([objectEnum.STONE, objectEnum.IRON, objectEnum.GOLD], [10, 4, 1])
         createObject(choice[0])
     createObject(objectEnum.TREE, (0, 0))
-    inventory.add(Item.item('Iron Pick', 1, "sprites/items/pickaxe.png", "pickaxe", "Isn't it Iron Pick?\nI'm gonna kill myself", 100, 10))
+    createObject(objectEnum.TREE, (50, 0))
+    inventory.add(Item.item('Iron Pick', 1, "sprites/items/pickaxe.png", ItemType.Tool, "Isn't it Iron Pick?\nI'm gonna kill myself", 100, 10))
 
 def checkInventoryEmpty():
     for row in craftingInventory:
@@ -348,10 +349,10 @@ def update(events):
 
             draw_text(overlaySurface, nameFont, item.name, (WIDTH * 0.12 + WIDTH * 0.095 * x, HEIGHT * 0.28 + HEIGHT * 0.16 * y), (0, 0, 0))
 
-            if item.type == "material":
+            if item.type == ItemType.Material:
                 pg.draw.rect(overlaySurface, (220, 220, 220, 230),[WIDTH * 0.075 + WIDTH * 0.095 * x, HEIGHT * 0.145 + HEIGHT * 0.16 * y, WIDTH * 0.02,HEIGHT * 0.034])  # item count background
                 draw_text(overlaySurface, countFont, str(item.count), (WIDTH * 0.085 + WIDTH * 0.095 * x, HEIGHT * 0.162 + HEIGHT * 0.16 * y), (0, 0, 0))
-            if item.type == "pickaxe":
+            if item.type == ItemType.Tool:
                 durability_percentage = item.durability / item.max_durability
                 pg.draw.rect(overlaySurface, (100, 100, 100, 230), [WIDTH * 0.084 + WIDTH * 0.095 * x, HEIGHT * 0.25 + HEIGHT * 0.16 * y, WIDTH * 0.072,HEIGHT * 0.01])
                 pg.draw.rect(overlaySurface, (200, 200, 200, 230),[WIDTH * 0.0858 + WIDTH * 0.095 * x, HEIGHT * 0.252 + HEIGHT * 0.16 * y, WIDTH * 0.0702 * durability_percentage, HEIGHT * 0.0069])
@@ -377,7 +378,7 @@ def update(events):
 
 
 
-                if selectedItem.type == "pickaxe":
+                if selectedItem.type == ItemType.Tool:
                     pg.draw.rect(overlaySurface, (160, 160, 160, 230), [WIDTH * 0.76, HEIGHT * 0.52 + descriptionHeight, WIDTH * 0.165, HEIGHT * .085])  # item info
                     draw_text(overlaySurface, infoDescriptionFont, f"Durability: {selectedItem.durability} / {selectedItem.max_durability}", (WIDTH * 0.8425, HEIGHT * 0.545 + descriptionHeight), (0, 0, 0))
                     draw_text(overlaySurface, infoDescriptionFont, f"Damage: {selectedItem.damage}", (WIDTH * 0.8425, HEIGHT * 0.575 + descriptionHeight), (0, 0, 0))
@@ -443,11 +444,11 @@ def update(events):
 
             draw_text(overlaySurface, nameFont, item.name, (WIDTH * 0.095 + WIDTH * 0.095 * x, HEIGHT * 0.28 + HEIGHT * 0.16 * y), (0, 0, 0))
 
-            if item.type == "material":
+            if item.type == ItemType.Material:
                 pg.draw.rect(overlaySurface, (220, 220, 220, 230),[WIDTH * 0.05 + WIDTH * 0.095 * x, HEIGHT * 0.145 + HEIGHT * 0.16 * y, WIDTH * 0.02,HEIGHT * 0.034])  # item count background
 
                 draw_text(overlaySurface, countFont, str(item.count), (WIDTH * 0.06 + WIDTH * 0.095 * x, HEIGHT * 0.162 + HEIGHT * 0.16 * y), (0, 0, 0))
-            if item.type == "pickaxe":
+            if item.type == ItemType.Tool:
                 durability_percentage = item.durability / item.max_durability
                 pg.draw.rect(overlaySurface, (100, 100, 100, 230), [WIDTH * 0.059 + WIDTH * 0.095 * x, HEIGHT * 0.25 + HEIGHT * 0.16 * y, WIDTH * 0.072,HEIGHT * 0.01])
                 pg.draw.rect(overlaySurface, (200, 200, 200, 230),[WIDTH * 0.0608 + WIDTH * 0.095 * x, HEIGHT * 0.252 + HEIGHT * 0.16 * y, WIDTH * 0.0702 * durability_percentage, HEIGHT * 0.0069])
@@ -461,7 +462,7 @@ def update(events):
                 if slot.collidepoint(mousePos):
                     if mouseclicked[0] and craftingSelected != -1 and craftingInventory[i][j] is None:
                         selectedItem = inventory.items[craftingSelected]
-                        if selectedItem.type == "pickaxe":
+                        if selectedItem.type == ItemType.Tool:
                             inventory.remove(selectedItem)
                             craftingSelected = -1
                             craftingInventory[i][j] = selectedItem

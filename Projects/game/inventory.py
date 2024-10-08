@@ -1,5 +1,7 @@
 from copy import copy
 import Item
+from Projects.game.Item import ItemType
+
 
 class inventory:
     def __init__(self, slots):
@@ -18,7 +20,7 @@ class inventory:
         if item not in self._items:
             if not len(self._items) == self.slots:
                 newItem = item
-                if not item.type == "pickaxe":
+                if not item.type == ItemType.Tool:
                     newItem = copy(item)
                 self._items.append(newItem)
         else:

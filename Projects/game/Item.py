@@ -1,4 +1,14 @@
+from enum import Enum
+
 import pygame as pg
+
+class ItemType(Enum):
+    Material = ("Material")
+    Tool = ("Tool")
+    def __init__(self, name):
+        self._name = name
+    def __eq__(self, other):
+        return self.name == other.name
 
 class item:
     nextid = 0
@@ -75,7 +85,7 @@ class item:
     def __eq__(self, other):
         if not isinstance(other, item):
             return False
-        if self.type == "pickaxe":
+        if self.type == ItemType.Tool and other.type == ItemType.Tool:
             return self._itemid == other._itemid
         return self._name == other._name
 

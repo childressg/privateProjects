@@ -2,6 +2,9 @@ from Item import item
 from enum import Enum
 import pygame as pg
 
+from Projects.game.Item import ItemType
+
+
 class objectEnum(Enum):
     STONE = (
         "Stone",
@@ -12,7 +15,7 @@ class objectEnum(Enum):
         (50, 50),
         (25, 25),
         (0, 0),
-        item("Stone", 1, "sprites/items/stone_item.png", "material", "Rock and Stone!")
+        item("Stone", 1, "sprites/items/stone_item.png", ItemType.Material, "Rock and Stone!")
     )
     IRON = (
         "Iron",
@@ -23,7 +26,7 @@ class objectEnum(Enum):
         (50, 50),
         (25, 25),
         (0, 0),
-        item("Iron", 1, "sprites/items/iron_item.png", "material", ":)")
+        item("Iron", 1, "sprites/items/iron_item.png", ItemType.Material, ":)")
     )
     GOLD = (
         "Gold",
@@ -34,7 +37,7 @@ class objectEnum(Enum):
         (50, 50),
         (25, 25),
         (0, 0),
-        item("Gold", 1, "sprites/items/gold_item.png", "material", "We're Rich!")
+        item("Gold", 1, "sprites/items/gold_item.png", ItemType.Material, "We're Rich!")
     )
     TREE = (
         "Tree",
@@ -45,7 +48,7 @@ class objectEnum(Enum):
         (50 ,100),
         (25, 92),
         (0, 70),
-        item("Wood", 1, "sprites/items/stone_item.png", "material", "splintery")
+        item("Wood", 1, "sprites/items/wood_item.png", ItemType.Material, "splintery")
     )
 
     def __init__(self, name, max_health, main_path, outline_path, flash_path, image_size, image_offset, bar_offset, drop_item):
