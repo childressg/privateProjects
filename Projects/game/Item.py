@@ -1,8 +1,18 @@
+from enum import Enum
 
+import pygame as pg
+
+class ItemType(Enum):
+    Material = ("Material")
+    Tool = ("Tool")
+    def __init__(self, name):
+        self._name = name
+    def __eq__(self, other):
+        return self.name == other.name
 
 class item:
     nextid = 0
-    def __init__(self, name, count, primaryColor, secondaryColor, type, description, damage=None, durability=None):
+    def __init__(self, name, count, image_path, type, description, damage=None, durability=None):
         global nextid
         try:
             nextid
@@ -11,13 +21,15 @@ class item:
 
         self._name = name
         self._count = count
-        self._primaryColor = primaryColor
-        self._secondaryColor = secondaryColor
+        if image_path is not None:
+            self._image = pg.image.load(image_path)
+        self._image_path = image_path
         self._type = type
         self._description = description
         self._itemid = nextid
         self._damage = damage
         self._durability = durability
+        self._max_durability = durability
         nextid += 1
 
     @property
@@ -33,12 +45,8 @@ class item:
         self._count = count
 
     @property
-    def primaryColor(self):
-        return self._primaryColor
-
-    @property
-    def secondaryColor(self):
-        return self._secondaryColor
+    def image(self):
+        return self._image
 
     @property
     def type(self):
@@ -64,8 +72,12 @@ class item:
     def durability(self, durability):
         self._durability = durability
 
+    @property
+    def max_durability(self):
+        return self._max_durability
+
     def __str__(self):
-        return f"{self._name} | {self.count} | {self.primaryColor} | {self.secondaryColor}"
+        return f"{self._name} | {self.count}"
 
     def __repr__(self):
         return self.__str__()
@@ -73,9 +85,12 @@ class item:
     def __eq__(self, other):
         if not isinstance(other, item):
             return False
-        if self.type == "pickaxe":
+        if self.type == ItemType.Tool and other.type == ItemType.Tool:
             return self._itemid == other._itemid
         return self._name == other._name
 
     def __copy__(self):
-        return item(self._name, self._count, self._primaryColor, self._secondaryColor, self._type, self._description, self._damage, self._durability)
+        return item(self._name, self._count, self._image_path, self._type, self._description, self._damage, self._durability)
+
+    def display(self, screen, loc, size):
+        screen.blit(pg.transform.scale(self._image, size), loc)
