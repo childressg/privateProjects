@@ -57,6 +57,8 @@ craftingActive = False
 craftingSelected = -1
 craftingInventory = [[None, None, None], [None, None, None], [None, None, None]]
 
+
+
 #function for finding an unoccupied location for a target
 def randomPos():
     limits = (int(WIDTH * 0.6) + 15, int(WIDTH * 3.6) - 15, int(HEIGHT * -1) + 15, int(HEIGHT * 2) - 15)
@@ -375,8 +377,6 @@ def update(events):
                 for line in lineList:
                     totalHeight += draw_text(overlaySurface, infoDescriptionFont, line, (WIDTH * 0.8425, HEIGHT * 0.515 + totalHeight), (0, 0, 0))
                 descriptionHeight = totalHeight
-
-
 
                 if selectedItem.type == ItemType.Tool:
                     pg.draw.rect(overlaySurface, (160, 160, 160, 230), [WIDTH * 0.76, HEIGHT * 0.52 + descriptionHeight, WIDTH * 0.165, HEIGHT * .085])  # item info
