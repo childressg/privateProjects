@@ -37,7 +37,7 @@ class Player:
         self._looking = 1
 
         self._on_ground = False
-        self._ground_collision = pg.Vector2(w, 10)
+        self._ground_collision = pg.Vector2(w, 2)
 
     @property
     def pos(self):
@@ -66,7 +66,9 @@ class Player:
     def update(self, lines):
         self._pos += self._vel
         if not self._on_ground:
-            self._vel += pg.Vector2(0, .2)
+            self._vel += pg.Vector2(0, .4)
+        else:
+            self._vel = pg.Vector2(0, 0)
         if self._vel.y > 10:
             self._vel.y = 10
 
@@ -89,7 +91,7 @@ class Player:
         self._on_ground = touching
 
     def move(self, line, intersections):
-        slope = None if line.x1 == line.x2 else (line.y2 - line.y1) / (line.x2 - line.x1)
+        slope = None if line.x1 == line.x2 else (line.y1 - line.y2) / (line.x2 - line.x1)
         if slope is None: # vetical line
             pass
         elif slope <= 0:
@@ -113,7 +115,12 @@ class Player:
                             right_most = intersection
             self._pos = right_most - self.size
 
-
     @property
     def on_ground(self):
         return self._on_ground
+
+    def jump(self, left, power):
+        max_power = -10
+        direction = -1 if left else 1
+        self._vel = pg.Vector2(5 * direction, max_power * power)
+        self._on_ground = False
