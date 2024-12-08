@@ -84,7 +84,6 @@ class Player:
             if not self._on_ground:
                 line_collide = line_rect(line.x1, line.y1, line.x2, line.y2, self.pos.x, self.pos.y, self.size.x, self.size.y)
                 if line_collide[0]:
-                    self._vel = pg.Vector2(0, 0)
                     self.move(line, line_collide[1])
             if line_rect(line.x1, line.y1, line.x2, line.y2, self.pos.x, self.pos.y + self.size.y, self._ground_collision.x, self._ground_collision.y)[0]:
                 touching = True
@@ -93,7 +92,12 @@ class Player:
     def move(self, line, intersections):
         slope = None if line.x1 == line.x2 else (line.y1 - line.y2) / (line.x2 - line.x1)
         if slope is None: # vetical line
-            pass
+            on_left = (self._pos.x + self._size.x) < line.x1
+            if on_left:
+                self._pos = pg.Vector2(line.x1 - self._size.x - 1, self._pos.y)
+            else:
+                self._pos = pg.Vector2(line.x1 + 1, self._pos.y)
+            self._vel = pg.Vector2(self._vel.x * -1, self._vel.y)
         elif slope <= 0:
             left_most = None
             for intersection in intersections:
@@ -104,6 +108,7 @@ class Player:
                         if left_most.x > intersection.x:
                             left_most = intersection
             self._pos = left_most - pg.Vector2(0, self.size.x)
+            self._vel = pg.Vector2(0, 0)
         else:
             right_most = None
             for intersection in intersections:
@@ -114,6 +119,7 @@ class Player:
                         if right_most.x > intersection.x:
                             right_most = intersection
             self._pos = right_most - self.size
+            self._vel = pg.Vector2(0, 0)
 
     @property
     def on_ground(self):
@@ -121,6 +127,7 @@ class Player:
 
     def jump(self, left, power):
         max_power = -10
+        min_power = -2
         direction = -1 if left else 1
-        self._vel = pg.Vector2(5 * direction, max_power * power)
+        self._vel = pg.Vector2(5 * direction, min_power + max_power * power)
         self._on_ground = False

@@ -21,7 +21,7 @@ pg.display.set_caption('jump square')
 clock = pg.time.Clock()
 running = True
 
-line_locs = [(-WIDTH, HEIGHT * 0.8, 2 * WIDTH, HEIGHT * 0.8)]
+line_locs = [(-WIDTH, HEIGHT * 0.8, 2 * WIDTH, HEIGHT * 0.8), (WIDTH / 2, HEIGHT * 0.2, WIDTH / 2, HEIGHT * 0.8)]
 lines = []
 p = Player(MIDDLE.x, MIDDLE.y, 20, 20)
 
@@ -40,10 +40,8 @@ def draw_arrow(screen_object, start, end, d, l):
     mu = -(lam + (math.pi - theta))
     mu2 = -mu + 2 * theta
 
-
     change = (l * math.cos(mu), l * math.sin(mu))
     change2 = (l * math.cos(mu2), -l * math.sin(mu2))
-    # print(change)
 
     pg.draw.line(screen_object, (0, 0, 0), start, end)
     pg.draw.line(screen_object, (0, 0, 0), end, (end[0] + change[0], end[1] - change[1]))
