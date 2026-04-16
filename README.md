@@ -5,3 +5,6 @@ Current Projects include:
  - game (name T.B.D.) | status: in progress
  - 3d rendering | status: in progress
  - battle for ridder nation: DONE
+ - jump square | status: in progress
+ - matrices | status: in progress
+ - pop the lock | status: in progress
